@@ -222,11 +222,11 @@ class KritaToot:
                     access_token  = account.get('access_token')
                     refresh_token = account.get('refresh_token')
         
-        if url:
-            account = KritaTootAccount(url, appid=appid, client_id=client_id, client_secret=client_secret, token_expiration=expiration,
-                                               access_token=access_token, refresh_token=refresh_token)
-            
-            accounts.append(account)
+                    if url:
+                        account = KritaTootAccount(url, appid=appid, client_id=client_id, client_secret=client_secret, token_expiration=expiration,
+                                                           access_token=access_token, refresh_token=refresh_token)
+                        
+                        accounts.append(account)
         
         self.accounts = accounts
     
