@@ -24,7 +24,7 @@ Download a zip file and copy the **kritatoot** folder containing the App.py file
 ~/.local/share/krita/pykrita
 ~~~
 
-Enable plugin: **Settings > Configure Krita... > Python Plugin Manager > kritatoot **
+Enable plugin: **Settings > Configure Krita... > Python Plugin Manager > kritatoot**
 
 
 # Limitation
