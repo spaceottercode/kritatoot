@@ -2,7 +2,9 @@
 
 A plugin for Krita 4.x that lets you post a copy of your **current** document directly on Mastodon.
 
-Adds **Post on Mastodon** menu option under the tools menu. A copy of the current document is always exported and posted. 
+Adds **Tools > Post on Mastodon** menu option. 
+
+A copy of the current document is always exported and posted. 
 
 > If the current document has never been saved, the exported image defaults to a PNG.
 
