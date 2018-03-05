@@ -1,8 +1,10 @@
 # KritaToot
 
-A plugin for Krita 4.x that lets you post your **current** document on a Maston site.
+A plugin for Krita 4.x that lets you post a copy of your **current** document directly on Mastodon.
 
-Look for the 'Post on Mastodon' menu option under tools. A copy of the current document is always exported and posted. 
+Adds **Tools > Scripts > Post on Mastodon** menu option when enabled. 
+
+A copy of the current document is always exported and posted. 
 
 > If the current document has never been saved, the exported image defaults to a PNG.
 
@@ -22,6 +24,7 @@ Download a zip file and copy the **kritatoot** folder containing the App.py file
 ~/.local/share/krita/pykrita
 ~~~
 
+Enable plugin: **Settings > Configure Krita... > Python Plugin Manager > kritatoot**
 
 
 # Limitation
