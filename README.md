@@ -1,5 +1,7 @@
 # KritaToot
 
+> a simple ready-to-use plugin with no external dependencies
+
 A plugin for Krita 4.x that lets you post a copy of your **current** document directly on Mastodon.
 
 Adds **Tools > Scripts > Post on Mastodon** menu option when enabled. 
