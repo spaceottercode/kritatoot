@@ -66,8 +66,8 @@ class MyExtension(Extension):
             if not os.path.exists(appdir):
                 os.mkdir(appdir)
                 
-            logfile = os.path.join(appdir, 'logfile')
-            logerr = os.path.join(appdir, 'logerr')
+            logfile = os.path.join(appdir, 'logfile.txt')
+            logerr = os.path.join(appdir, 'logerr.txt')
             
             sys.stdout = open(logfile, 'w')
             sys.stderr = open(logerr, 'w')

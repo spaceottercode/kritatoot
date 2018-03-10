@@ -74,9 +74,9 @@ Content-Type: application/octet-stream
         # returns an Attachment json (Mastodon API)
         try:
             print(jsontext)
-        except Exception as e:
+        except:
             # harmless error
-            print(e.args)
+            pass
     
         return jsondata['id']
     else:
@@ -152,9 +152,9 @@ def postmedia(url, access_token, media_id, message=None, visibility='public', sp
         
         try:
             print(jsontext)
-        except Exception as e:
+        except:
             # harmless error
-            print(e.args)
+            pass
         
         return True
         
@@ -212,8 +212,8 @@ def post(url, access_token, message, visibility='public', spoiler_text=None):
     
     try:
         print(jsontext)
-    except Exception as e:
-        print(e.args)
+    except:
+        pass
     
     
     
