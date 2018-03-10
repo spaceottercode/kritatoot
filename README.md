@@ -18,6 +18,7 @@ You can also specify a message (optional), the privacy setting of your toot (Pub
 
 # Installation
 
+
 #### Krita 4.0.0 on Linux
 
 Download a zip file and copy the **kritatoot** folder containing the App.py file and the **kritatoot.desktop** file into the following location:
@@ -27,6 +28,16 @@ Download a zip file and copy the **kritatoot** folder containing the App.py file
 ~~~
 
 Enable plugin: **Settings > Configure Krita... > Python Plugin Manager > kritatoot**
+
+#### Krita 4.0.0 on Windows
+
+Download a zip file and copy the **kritatoot** folder containing the App.py file and the **kritatoot.desktop** file into the *Resource Folder* (Settings > Manage Resources > Open Resource Folder). Usually nested inside the (hidden) AppData folder in your personal user folder. 
+
+
+Enable plugin: **Settings > Configure Krita... > Python Plugin Manager > kritatoot**
+
+> May require a krita relaunch
+
 
 
 # Limitation
