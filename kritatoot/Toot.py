@@ -72,7 +72,11 @@ Content-Type: application/octet-stream
         jsondata = json.loads(jsontext)
     
         # returns an Attachment json (Mastodon API)
-        print(jsontext)
+        try:
+            print(jsontext)
+        except Exception as e:
+            # harmless error
+            print(e.args)
     
         return jsondata['id']
     else:
@@ -146,7 +150,12 @@ def postmedia(url, access_token, media_id, message=None, visibility='public', sp
         jsontext = response.read().decode('utf-8')
         jsondata = json.loads(jsontext)
         
-        print(jsontext)
+        try:
+            print(jsontext)
+        except Exception as e:
+            # harmless error
+            print(e.args)
+        
         return True
         
     else:
@@ -200,8 +209,12 @@ def post(url, access_token, message, visibility='public', spoiler_text=None):
     
     jsontext = response.read().decode('utf-8')
     jsondata = json.loads(jsontext)
-        
-    print(jsontext)
+    
+    try:
+        print(jsontext)
+    except Exception as e:
+        print(e.args)
+    
     
     
     
