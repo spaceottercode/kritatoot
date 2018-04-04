@@ -21,7 +21,7 @@ You can also specify a message (optional), the privacy setting of your toot (Pub
 
 #### Krita 4.0.0 on Linux
 
-Download a zip file and copy the **kritatoot** folder containing the App.py file and the **kritatoot.desktop** file into the following location:
+Download a zip file and copy the **kritatoot** folder and the **kritatoot.desktop** file into the following location:
 
 ~~~
 ~/.local/share/krita/pykrita
@@ -31,26 +31,29 @@ Enable plugin: **Settings > Configure Krita... > Python Plugin Manager > kritato
 
 #### Krita 4.0.0 on Windows
 
-Download a zip file and copy the **kritatoot** folder containing the App.py file and the **kritatoot.desktop** file into the *Resource Folder* (Settings > Manage Resources > Open Resource Folder). Usually nested inside the (hidden) AppData folder in your personal user folder. 
+Download a zip file and copy the **kritatoot** folder and the **kritatoot.desktop** file into Krita's *Resource Folder* (Settings > Manage Resources > Open Resource Folder). It's usually a folder somewhere in the hidden AppData folder.
 
 
-Enable plugin: **Settings > Configure Krita... > Python Plugin Manager > kritatoot**
+Enable the plugin: **Settings > Configure Krita... > Python Plugin Manager > kritatoot**
 
-> May require a krita relaunch
+> You may need to restart Krita
 
 
 
 # Limitation
 
-* Only one image per toot
-* Specifying a focal point, found on new Mastodon servers, is not implemented
+At the moment:
+
+* You can post one image per toot.
+* Specifying a focal point is not implemented
+* no input for alternate text
 * Maximum file size and file types are set by the Mastodon server
-* no alternate text
+
 
 # TODO
 
-* implement focal point support or similar feature
-* when adding support for multiple images per toot, how do we indicate images and their order
+* implement focal point support or equivalent feature
+* determine the best way to add support for multiple images per toot, in an orthogonal fashion. e.g. If an open doc is the subject of a toot's image how do we indicate other images (other open docs?), especially their order.
 * alternate text
 * spoiler text?
 
