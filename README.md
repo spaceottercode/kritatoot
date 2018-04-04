@@ -54,8 +54,8 @@ At the moment:
 
 * implement focal point support or equivalent feature
 * determine the best way to add support for multiple images per toot, in an orthogonal fashion. e.g. If an open doc is the subject of a toot's image how do we indicate other images (other open docs?), especially their order.
-* add support alternate text
-* add support spoiler text?
+* add support for alternate text
+* add support for spoiler text?
 
 # License
 
