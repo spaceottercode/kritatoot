@@ -72,8 +72,10 @@ class MyExtension(Extension):
             sys.stdout = open(logfile, 'w')
             sys.stderr = open(logerr, 'w')
         
-        action = Krita.instance().createAction("kritatoot", "Post on Mastodon")
+    def createActions(self, window):
+        action = window.createAction("kritatoot", "Post on Mastodon", "tools/scripts")
         action.triggered.connect(self.toot)
+        pass
 
 # And add the extension to Krita's list of extensions:
 Krita.instance().addExtension(MyExtension(Krita.instance())) 
