@@ -13,13 +13,18 @@ else:
     from urllib.request import urlopen, Request
 
 
-def uploadmedia(url, access_token, filename):
+def uploadmedia(url, access_token, filename, description=None, focus=(0.0,0.0)):
     """
-    url - e.g. https://example.com
-    
+    url         - e.g. https://example.com
+    description - up to 420 chars
+    focus       - normalized coordinates, where (0,0) is image center, top-left corner is (-1.0,1.0)
+                  bottom right corner is (1.0,-1.0)
+                  
     returns a media id (numeric string) if successful, otherwise returns None
     """
+    # see RFC2046 section 5 multipart form
     # TODO gen rand 16 char hex string instead of using a fixed one
+    boundary = 'd74496d66958873e'
     
     # POST
     # file (req) (multipart/form-data)
@@ -50,10 +55,69 @@ Content-Type: application/octet-stream
     
     fd.close()
     
+    # validate image
+    if re.search(boundary.encode('utf8'), imgdata):
+        print('Boundary collision')
+        return None
+    
+    data_utf8 = data_head_utf8 + imgdata
+    
+    # validate description, if any
+    if description:
+        
+        if re.search(boundary, description):
+            print('Boundary collision')
+            return None
+        
+        if len(description) > 420:
+            print('Alt-Text/Description too long.')
+            return None
+    
+    # Add a description, if any
+    if description:
+        
+        data_alt_text ='''\r\n--------------------------d74496d66958873e
+Content-Disposition: form-data; name="description"
+
+%s''' % description
+        
+        data_alt_text = re.sub('\n', '\r\n', data_alt_text)
+    
+        data_alt_text_utf8 = data_alt_text.encode('utf-8')
+        
+        data_utf8 += data_alt_text_utf8
+    
+    # validate focus/focal point
+    if not focus:
+        focus = (0.0,0.0)
+    
+    if focus[0] < -1.0 or focus[0] > 1.0:
+        print('Focal point out of range. Setting to (0,0)')
+        focus = (0.0,0.0)
+    
+    if focus[1] < -1.0 or focus[1] > 1.0:
+        print('Focal point out of range. Setting to (0,0)')
+        focus = (0.0,0.0)
+    
+    # Add a focal point, default is dead-center: (0,0)
+    data_focus = '''\r\n--------------------------d74496d66958873e
+Content-Disposition: form-data; name="focus"
+
+%.2f,%.2f''' % focus
+    
+    data_focus = re.sub('\n', '\r\n', data_focus)
+    
+    data_focus_utf8 = data_focus.encode('utf-8')
+    
+    data_utf8 += data_focus_utf8
+    
+    # Add mutipart footer
     data_tail = '''\r\n--------------------------d74496d66958873e--\r\n'''
     data_tail_utf8 = data_head.encode('utf-8')
     
-    data_utf8 = data_head_utf8 + imgdata + data_tail_utf8
+    data_utf8 += data_tail_utf8
+    
+    
     
     headers['Content-Length'] = len(data_utf8)
     

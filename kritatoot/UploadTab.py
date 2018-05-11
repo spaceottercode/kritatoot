@@ -295,7 +295,7 @@ class UploadTab(QWidget):
             print('uploading media')
             
             try:
-                media_id = uploadmedia(url, access_token, filename)
+                media_id = uploadmedia(url, access_token, filename, description="Uploaded using kritatoot", focus=(0.0,0.0))
                 
                 if not media_id:
                     QApplication.restoreOverrideCursor()
