@@ -33,7 +33,7 @@ def saveTempMedia():
         
         # Check if the file in question is one that can be uploaded to mastodon
 
-        match = re.search(r"\w+\.png|jpeg|gif|jpg", docname)
+        match = re.search(r"\w+\.(png|jpeg|gif|jpg)$", docname)
 
         # If not, save as a png.
         if match is None:
