@@ -2,6 +2,7 @@
 import os
 import sys
 import inspect
+from functools import partial
 
 if sys.version_info < (3,):
     from PySide.QtGui import *
@@ -14,6 +15,230 @@ else:
     
 from .Toot import uploadmedia, postmedia, post
 from .TempMedia import saveTempMedia, removeTempMedia
+
+
+
+class AltTextDialog(QDialog):
+    """
+    A modal dialogbox for users to supply altenative text to their images
+    """
+    
+    def __init__(self, parent=None, text=None):
+        super(AltTextDialog, self).__init__(parent) # Py2
+        
+        self.setModal(True)
+        
+        self.alttext = text
+        
+        
+        self.boxlabel = QLabel('Image Description')
+        
+        # enter text here
+        self.textbox = QPlainTextEdit()
+        
+        if self.alttext:
+            self.textbox.setPlainText(self.alttext)
+        
+        self.addbutton = QToolButton()
+        self.addbutton.setText('Add')
+        
+        self.exitbutton = QToolButton()
+        self.exitbutton.setText('Cancel')
+        
+        controlsLayout = QHBoxLayout()
+        controlsLayout.addStretch(1)
+        controlsLayout.addWidget(self.exitbutton)
+        controlsLayout.addWidget(self.addbutton)
+        
+        
+        mainLayout = QVBoxLayout()
+        
+        mainLayout.addWidget(self.boxlabel)
+        mainLayout.addWidget(self.textbox)
+        mainLayout.addLayout(controlsLayout)
+        
+        self.setLayout(mainLayout)
+        
+        # slots
+        self.addbutton.clicked.connect(self.addtext)
+        self.exitbutton.clicked.connect(self.accept)
+        
+    def addtext(self):
+        """
+        """
+        
+        text = self.textbox.toPlainText()
+        
+        self.alttext = text
+        
+        self.accept()
+
+
+class FocalPointDialog(QDialog):
+    """
+    A modal dialogbox for users to supply a focal point: a location that acts
+    like an achor or pivot.
+    """
+    
+    def __init__(self, parent=None, focal=None):
+        """
+        focal   - (tuple) or None
+        """
+        
+        super(FocalPointDialog, self).__init__(parent) # Py2
+        
+        self.setModal(True)
+        
+        self.MAXROW = 3
+        self.MAXCOL = 3
+        
+        # holds the (row,col) of a currently selected, but uncommitted, focal point.
+        # a sel focal point is commited when user clicks add.
+        self.tempidx  = focal
+        
+        # (row,col) of the last commited focal point
+        self.focalidx = focal
+        
+        # the focalidx, (row, col), converted to focal point coordinates (x, y)
+        self.focalcoords = (0.0, 0.0)
+        
+        if self.focalidx:
+            self.focalcoords = self.indexToCoordinates(self.focalidx[0], self.focalidx[1])
+        
+        self.focallabel = QLabel('Choose a focal point (anchor)')
+        
+        gridLayout = QGridLayout()
+        gridLayout.setHorizontalSpacing(0)
+        gridLayout.setVerticalSpacing(0)
+        
+        
+        
+        self.focalbuttons = [None] * self.MAXROW
+        for i in range(self.MAXROW):
+            self.focalbuttons[i] = [None] * self.MAXCOL
+    
+        for i in range(self.MAXROW):
+            
+            for j in range(self.MAXCOL):
+                button = QToolButton()
+                button.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+                
+                if self.focalidx and i == self.focalidx[0] and j == self.focalidx[1]:
+                    button.setStyleSheet("background-color: #2588d0;")
+                
+                gridLayout.addWidget(button, i, j)
+                
+                button.clicked.connect(partial(self.toggleFocal, i, j))
+                
+                self.focalbuttons[i][j] = button
+                
+        
+        
+        
+        centerLayout = QHBoxLayout()
+        centerLayout.addStretch(1)
+        centerLayout.addLayout(gridLayout);
+        centerLayout.addStretch(1)
+        
+        # controls
+        self.addbutton = QToolButton()
+        self.addbutton.setText('Add')
+        
+        self.exitbutton = QToolButton()
+        self.exitbutton.setText('Cancel')
+        
+        controlsLayout = QHBoxLayout()
+        controlsLayout.addStretch(1)
+        controlsLayout.addWidget(self.exitbutton)
+        controlsLayout.addWidget(self.addbutton)
+        
+        
+        mainLayout = QVBoxLayout()
+        
+        mainLayout.addWidget(self.focallabel)
+        mainLayout.addLayout(centerLayout)
+        mainLayout.addLayout(controlsLayout)
+        
+        self.setLayout(mainLayout)
+        
+        self.defaultStyleSheet = self.addbutton.styleSheet()
+        
+        # slots
+        self.addbutton.clicked.connect(self.addfocal)
+        self.exitbutton.clicked.connect(self.accept)
+    
+    def indexToCoordinates(self, row, col):
+        """
+        Converts a row & col into a corresponding (x,y) tuple in
+        focal point space. In focal point space, x = -1.0 to 1.0
+        and y = -1.0 to 1.0
+        """
+        
+        
+        # Note - hard coded values. assuming 3x3 grid
+        # using perimiter values except for center
+        if row == 0:
+            if col == 0:
+                return (-1.0, 1.0)
+            elif col == 1:
+                return (0.0, 1.0)
+            elif col == 2:
+                return (1.0, 1.0)
+        elif row == 1:
+            if col == 0:
+                return (-1.0, 0.0)
+            elif col == 1:
+                return (0.0, 0.0)
+            elif col == 2:
+                return (1.0, 0.0)
+        elif row == 2:
+            if col == 0:
+                return (-1.0, -1.0)
+            elif col == 1:
+                return (0.0, -1.0)
+            elif col == 2:
+                return (1.0, -1.0)
+        
+        
+    
+    def toggleFocal(self, row, column):
+        """
+        """
+        #print("CLICKED (" + str(row) + "," + str(column) + ")")
+        
+        # clear all
+        for i in range(self.MAXROW):
+            for j in range(self.MAXCOL):
+                self.focalbuttons[i][j].setStyleSheet(self.defaultStyleSheet)
+        
+        if self.focalidx:
+            # already selected?
+            if row == self.focalidx[0] and column == self.focalidx[1]:
+                self.focalbuttons[row][column].setStyleSheet(self.defaultStyleSheet)
+                self.tempidx = None
+            else:
+                self.focalbuttons[row][column].setStyleSheet("background-color: #2588d0;")
+                self.tempidx = (row, column)
+        else:
+            # first time a selection has been made
+            self.focalbuttons[row][column].setStyleSheet("background-color: #2588d0;")
+            self.tempidx = (row, column)
+    
+    
+    def addfocal(self):
+        """
+        """
+        
+        self.focalidx = self.tempidx
+        
+        if self.focalidx:
+            # convert the row/col to actual coordinates
+            self.focalcoords = self.indexToCoordinates(self.focalidx[0], self.focalidx[1])
+        else:
+            self.focalcoords = (0.0, 0.0)
+        
+        self.accept()
+
 
 
 
@@ -43,12 +268,22 @@ class UploadTab(QWidget):
         self.activeurl = None
         
         self.icons = {
+            'noalttext': QIcon( os.path.join(parentfolder, "images/all/noalttext.png") ),
+            'alttext':   QIcon( os.path.join(parentfolder, "images/all/alttext.png") ),
+            
             'nohide': QIcon( os.path.join(parentfolder, "images/all/nohide.png") ),
             'hide':   QIcon( os.path.join(parentfolder, "images/all/hide.png") ),
             
-            'focal':  QIcon( os.path.join(parentfolder, "images/all/focal.png") )
+            'nofocal': QIcon( os.path.join(parentfolder, "images/all/nofocal.png") ),
+            'focal':   QIcon( os.path.join(parentfolder, "images/all/focal.png") )
         }
         
+        # if an alt text is provided
+        self.alttext = None
+        
+        # the selected row and column, if any (otherwise None)
+        self.selfocalidx = None
+        self.focalcoords = (0.0, 0.0)
         
         # list of sites where the app is registered and authorized
         self.urllabel = QLabel('Mastodon Server')
@@ -82,6 +317,11 @@ class UploadTab(QWidget):
         self.privacy.addItem('Followers-Only', userData={'value':'private'})
         self.privacy.addItem('Direct',         userData={'value':'direct'})
         
+        # add alt-text
+        self.alttextbtn = QToolButton()
+        alttexticon = self.icons['noalttext']
+        self.alttextbtn.setIcon(alttexticon)
+        
         # button indicating if a warning title card is requested or not
         self.hidden = QToolButton()
         visibleicon = self.icons['nohide']
@@ -90,11 +330,10 @@ class UploadTab(QWidget):
         # when True, a warning title card is requested
         self.hidden.toggled = False
         
-        # for possible future inclusion
+        # choose a focal point/anchor/pivot
         self.focalpoint = QToolButton()
-        focalicon = self.icons['focal']
+        focalicon = self.icons['nofocal']
         self.focalpoint.setIcon(focalicon)
-        self.focalpoint.setEnabled(False)
         
         
         # send toot
@@ -107,6 +346,7 @@ class UploadTab(QWidget):
         horizLayout = QHBoxLayout()
         
         horizLayout.addWidget(self.privacy)
+        horizLayout.addWidget(self.alttextbtn)
         horizLayout.addWidget(self.hidden)
         horizLayout.addWidget(self.focalpoint)
         horizLayout.addWidget(self.tootimg)
@@ -126,7 +366,10 @@ class UploadTab(QWidget):
         
         # slots
         self.textbox.textChanged.connect(self.updateCharCount)
+        
+        self.alttextbtn.clicked.connect(self.addAltText)
         self.hidden.clicked.connect(self.toggleVisibility)
+        self.focalpoint.clicked.connect(self.addFocalPoint)
         
         self.tootimg.clicked.connect(self.upload)
     
@@ -203,8 +446,24 @@ class UploadTab(QWidget):
             # disable toot button
             self.charcount.setStyleSheet("color: #a53232")
             self.tootimg.setEnabled(False)
+    
+    
+    def addAltText(self):
+        """
+        """
         
+        alttextui = AltTextDialog(self, self.alttext);
+        alttextui.exec_()
         
+        self.alttext = alttextui.alttext
+        
+        if self.alttext:
+            #print("ALTTEXT " + self.alttext)
+            alttexticon = self.icons['alttext']
+            self.alttextbtn.setIcon(alttexticon)
+        else:
+            alttexticon = self.icons['noalttext']
+            self.alttextbtn.setIcon(alttexticon)
     
     def toggleVisibility(self):
         """
@@ -226,6 +485,24 @@ class UploadTab(QWidget):
             self.hidden.setIcon(visibleicon)
     
     
+    def addFocalPoint(self):
+        """
+        """
+        
+        focalui = FocalPointDialog(self, self.selfocalidx);
+        focalui.exec_()
+        
+        self.selfocalidx = focalui.focalidx
+        
+        if self.selfocalidx:
+            focalicon = self.icons['focal']
+            self.focalpoint.setIcon(focalicon)
+            self.focalcoords = focalui.focalcoords
+        else:
+            focalicon = self.icons['nofocal']
+            self.focalpoint.setIcon(focalicon)
+            self.focalcoords = (0.0, 0.0)
+    
     
     def upload(self):
         """
@@ -245,6 +522,12 @@ class UploadTab(QWidget):
             print('Max Chars exceeded')
             return False
         
+        # include a description?
+        description = "Uploaded using kritatoot"
+        
+        if self.alttext:
+            description = self.alttext
+        
         # hide media?
         hideme = self.hidden.toggled
         
@@ -252,6 +535,12 @@ class UploadTab(QWidget):
         visindex = self.privacy.currentIndex()
         visdata = self.privacy.itemData(visindex)
         visibility = visdata['value']
+        
+        #focal point: None or a tuple (x,y)
+        focus = (0.0,0.0)
+        
+        if self.focalcoords:
+            focus = self.focalcoords
         
         
         print('At this point the following attrs are set: ')
@@ -261,7 +550,8 @@ class UploadTab(QWidget):
         hidestr = 'YES' if visibility else 'NO'
         print('Hide   : ' + hidestr)
         print('message: %s' % message)
-        
+        print('description: %s' % description if description else 'None')
+        print('focus: %s' % focus if focus else 'None')
         
         if self.app:
             
@@ -295,7 +585,7 @@ class UploadTab(QWidget):
             print('uploading media')
             
             try:
-                media_id = uploadmedia(url, access_token, filename, description="Uploaded using kritatoot", focus=(0.0,0.0))
+                media_id = uploadmedia(url, access_token, filename, description=description, focus=focus)
                 
                 if not media_id:
                     QApplication.restoreOverrideCursor()
