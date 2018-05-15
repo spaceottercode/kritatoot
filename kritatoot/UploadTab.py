@@ -316,11 +316,13 @@ class UploadTab(QWidget):
         self.privacy.addItem('Unlisted',       userData={'value':'unlisted'})
         self.privacy.addItem('Followers-Only', userData={'value':'private'})
         self.privacy.addItem('Direct',         userData={'value':'direct'})
+        self.privacy.setToolTip('What type of post is this?')
         
         # add alt-text
         self.alttextbtn = QToolButton()
         alttexticon = self.icons['noalttext']
         self.alttextbtn.setIcon(alttexticon)
+        self.alttextbtn.setToolTip('Add a description of your image.')
         
         # button indicating if a warning title card is requested or not
         self.hidden = QToolButton()
@@ -329,17 +331,19 @@ class UploadTab(QWidget):
         # overriding unused method (button not checkable)
         # when True, a warning title card is requested
         self.hidden.toggled = False
+        self.hidden.setToolTip('Hide image. Viewers must click to reveal image. Used for sensitive images.')
         
         # choose a focal point/anchor/pivot
         self.focalpoint = QToolButton()
         focalicon = self.icons['nofocal']
         self.focalpoint.setIcon(focalicon)
-        
+        self.focalpoint.setToolTip('Set the pivot point (anchor) for cropped previews/thumbnails')
         
         # send toot
         self.tootimg = QToolButton()
         self.tootimg.setStyleSheet("background-color: #2588d0; color: #fff")
         self.tootimg.setText('TOOT!')
+        self.tootimg.setToolTip('Post your image and message.')
         
         self.tootimg.setEnabled(False)
         
@@ -551,7 +555,10 @@ class UploadTab(QWidget):
         print('Hide   : ' + hidestr)
         print('message: %s' % message)
         print('description: %s' % description if description else 'None')
-        print('focus: %s' % focus if focus else 'None')
+        if focus:
+            print('focus: (%.2f, %.2f)' % focus)
+        else:
+            print('focus: None')
         
         if self.app:
             
@@ -612,11 +619,20 @@ class UploadTab(QWidget):
                 # reset certain widgets
                 self.textbox.clear()
                 
+                self.alttext = None
+                alttexticon = self.icons['noalttext']
+                self.alttextbtn.setIcon(alttexticon)
+                
                 if self.hidden.toggled:
                     self.hidden.toggled = False
                     visibleicon = self.icons['nohide']
                     self.hidden.setIcon(visibleicon)
-                
+                    
+                self.selfocalidx = None
+                self.focalcoords = (0.0, 0.0)
+                focalicon = self.icons['nofocal']
+                self.focalpoint.setIcon(focalicon)
+                                
                 QMessageBox.information(self, 'Post Completed', 'Image uploaded')
                 print('Post Succeeded')
             else:
