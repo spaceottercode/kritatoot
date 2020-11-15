@@ -107,7 +107,7 @@ class focalPointWidget(QWidget):
         painter.save()
         # Let's make this super fancy and setup an area of interest!
         
-        focalXY = QPointF(((self.focalPoint[0] + 1.0) / 2), ((self.focalPoint[1] + 1.0) / 2))
+        focalXY = QPointF(((self.focalPoint[0] + 1.0) / 2), (((-1.0*self.focalPoint[1]) + 1.0) / 2))
         aoi = 0.333 # The area of interest is ~ a third of the image.
         offset = QPointF(aoi/2, aoi/2)
         topleft = focalXY - offset
@@ -131,6 +131,11 @@ class focalPointWidget(QWidget):
         painter.drawRect(QRect(QPoint(0, white.bottom()), QPoint(white.left(), self.height())))
         painter.drawRect(QRect(QPoint(white.right(), 0), QPoint(self.width(), white.top())))
         
+        painter.setBrush(Qt.white)
+        painter.setPen(Qt.white)
+        painter.setOpacity(1.0)
+        painter.drawText(5, self.height()-10, str(", ").join(format(x, "1.2f") for x in self.focalPoint))
+
         painter.restore()
         
         
@@ -148,7 +153,8 @@ class focalPointWidget(QWidget):
         
         x = (((pos.x() - imageOffsetLeft) / image.width() ) * 2 ) - 1.0
         y = (((pos.y() - imageOffsetTop) / image.height() ) * 2 ) - 1.0
-        self.focalPoint = [x, y]
+        self.focalPoint = [x, y * -1.0]
+        print(self.focalPoint)
         self.update()
     
     def mousePressEvent(self, event):
@@ -485,29 +491,22 @@ class UploadTab(QWidget):
         image = QImage()
         doc = Krita.instance().activeDocument()
         if doc is not None:
-            if doc.width() < 512 and doc.height() < 512:
-                # This is probably pixel art.
-                # We will not have to request a thumbnail for this.
-                image = doc.projection(doc.width(), doc.height())
-            elif doc.width() > doc.height():
-                h = (doc.height()/doc.width())*512
-                image = doc.thumbnail(512, h)
-            else :
-                w = (doc.width()/doc.height())*512
-                image = doc.thumbnail(w, 512)    
-        
+            image = doc.projection(0, 0, doc.width(), doc.height())
+            if doc.width() > 512 and doc.height() > 512:
+                # This is probably not pixel art.
+                    image = image.scaled(512, 512, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+
         focalui = FocalPointDialog(self, self.focalcoords, image);
         focalui.exec_()
         
         self.focalcoords = focalui.focalcoords
-        #if self.selfocalidx:
-        #    focalicon = self.icons['focal']
-        #    self.focalpoint.setIcon(focalicon)
-        
-        #else:
-        #    focalicon = self.icons['nofocal']
-        #    self.focalpoint.setIcon(focalicon)
-        #    self.focalcoords = (0.0, 0.0)
+        if self.focalcoords[0] != 0.0 and self.focalcoords[1] != 0.0:
+            focalicon = self.icons['focal']
+            self.focalpoint.setIcon(focalicon)
+        else:
+            focalicon = self.icons['nofocal']
+            self.focalpoint.setIcon(focalicon)
+            self.focalcoords = (0.0, 0.0)
     
     
     def upload(self):
