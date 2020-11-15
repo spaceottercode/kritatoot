@@ -12,7 +12,9 @@ else:
     from PyQt5.QtGui import *
     from PyQt5.QtWidgets import *
     from PyQt5.QtCore import *
-    
+
+from krita import *
+
 from .Toot import uploadmedia, postmedia, post
 from .TempMedia import saveTempMedia, removeTempMedia
 
@@ -72,7 +74,118 @@ class AltTextDialog(QDialog):
         self.alttext = text
         
         self.accept()
+        
+class focalPointWidget(QWidget):
+    """
+    A widget which draws an image and you can select a focal point.
+    """
+    
+    def __init__(self, parent = None):
+        super(focalPointWidget, self).__init__(parent)
+        self.focalPoint =  [0.0, 0.0]
+        self.image = QImage()
+        self.mouseIn = False
+        self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+        
+    def setImage(self, image = QImage()):
+        self.image = image
+        self.update()
+    
+    def paintEvent(self, event):
+        
+        painter = QPainter(self)
+        
+        image = self.image.scaled(self.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        imageOffsetLeft = (self.width()-image.width())/2
+        imageOffsetTop = (self.height()-image.height())/2
+        
+        painter.setBrush(Qt.black)
+        painter.setPen(QPen(Qt.NoPen))
+        painter.drawRect(0, 0, self.width(), self.height())
+        painter.drawImage(imageOffsetLeft, imageOffsetTop, image)
+        
+        painter.save()
+        # Let's make this super fancy and setup an area of interest!
+        
+        focalXY = QPointF(((self.focalPoint[0] + 1.0) / 2), (((-1.0*self.focalPoint[1]) + 1.0) / 2))
+        aoi = 0.333 # The area of interest is ~ a third of the image.
+        offset = QPointF(aoi/2, aoi/2)
+        topleft = focalXY - offset
+        bottomright = focalXY + offset
 
+        
+        # First let's draw the whiteish square in the middle.
+        # This is necessary for very dark images.
+        
+        white = QRect( QPoint( (topleft.x()*image.width()) + imageOffsetLeft, (topleft.y() * image.height())+imageOffsetTop), QPoint((bottomright.x()*image.width())+imageOffsetLeft, (bottomright.y()*image.height())+imageOffsetTop))
+        painter.setBrush(Qt.white)
+        painter.setOpacity(0.3)
+        painter.drawRect(white)
+        
+        # Then draw 4 black sections to indicate the non-visible area.
+        # This is for very bright images.
+        
+        painter.setBrush(Qt.black)
+        painter.drawRect(QRect(QPoint(0, 0), white.topLeft()))
+        painter.drawRect(QRect(white.bottomRight(), QPoint(self.width(), self.height())))
+        painter.drawRect(QRect(QPoint(0, white.bottom()), QPoint(white.left(), self.height())))
+        painter.drawRect(QRect(QPoint(white.right(), 0), QPoint(self.width(), white.top())))
+        
+        painter.setBrush(Qt.white)
+        painter.setPen(Qt.white)
+        painter.setOpacity(1.0)
+        painter.drawText(5, self.height()-10, str(", ").join(format(x, "1.2f") for x in self.focalPoint))
+
+        painter.restore()
+        
+        
+    def setFocalPointFromMousePos(self, pos = QPoint()):
+        
+        image = QSize(self.width(), self.height())
+        if self.image.width() != 0 and self.image.height() != 0:
+            if self.image.width() > self.image.height():
+                image = QSize(self.width(), (self.image.height()/self.image.width()) * self.height())
+            else:
+                image = QSize((self.image.width()/self.image.height()) * self.width(), self.height())
+
+        imageOffsetLeft = (self.width()  - image.width() ) / 2
+        imageOffsetTop  = (self.height() - image.height()) / 2
+        
+        x = (((pos.x() - imageOffsetLeft) / image.width() ) * 2 ) - 1.0
+        y = (((pos.y() - imageOffsetTop) / image.height() ) * 2 ) - 1.0
+        self.focalPoint = [x, y * -1.0]
+        print(self.focalPoint)
+        self.update()
+    
+    def mousePressEvent(self, event):
+        
+        self.mouseIn = True
+        self.setFocalPointFromMousePos(event.pos())
+        
+        event.accept()
+        
+    def mouseReleaseEvent(self, event):
+        
+        self.mouseIn = False
+        self.setFocalPointFromMousePos(event.pos())
+        
+        event.accept()
+        
+    def mouseMoveEvent(self, event):
+        if (self.mouseIn == True):
+            self.setFocalPointFromMousePos(event.pos())
+            event.accept()
+
+    def sizeHint(self):
+        return QSize(256, 256)
+    
+    def setFocalPoint(self, x, y):
+        self.focalPoint = [x, y]
+        self.update()
+        
+    def getFocalPoint(self):
+        return self.focalPoint
+        
 
 class FocalPointDialog(QDialog):
     """
@@ -80,162 +193,46 @@ class FocalPointDialog(QDialog):
     like an achor or pivot.
     """
     
-    def __init__(self, parent=None, focal=None):
+    def __init__(self, parent = None, focal = (0, 0), image = QImage()):
         """
         focal   - (tuple) or None
+        image   - (QImage) or None
         """
         
         super(FocalPointDialog, self).__init__(parent) # Py2
         
-        self.setModal(True)
+        self.setModal(True)        
+        self.setWindowTitle('Set Image Focalpoint')
         
-        self.MAXROW = 3
-        self.MAXCOL = 3
-        
-        # holds the (row,col) of a currently selected, but uncommitted, focal point.
-        # a sel focal point is commited when user clicks add.
-        self.tempidx  = focal
-        
-        # (row,col) of the last commited focal point
-        self.focalidx = focal
-        
-        # the focalidx, (row, col), converted to focal point coordinates (x, y)
-        self.focalcoords = (0.0, 0.0)
-        
-        if self.focalidx:
-            self.focalcoords = self.indexToCoordinates(self.focalidx[0], self.focalidx[1])
+        self.focalcoords = focal
         
         self.focallabel = QLabel('Choose a focal point (anchor)')
         
-        gridLayout = QGridLayout()
-        gridLayout.setHorizontalSpacing(0)
-        gridLayout.setVerticalSpacing(0)
+        mainLayout = QVBoxLayout()
+        mainLayout.addWidget(self.focallabel)
+
+        self.imageWidget = focalPointWidget()
+        self.imageWidget.setImage(image)
+        self.imageWidget.setFocalPoint(self.focalcoords[0], self.focalcoords[1])
+        mainLayout.addWidget(self.imageWidget)
         
-        
-        
-        self.focalbuttons = [None] * self.MAXROW
-        for i in range(self.MAXROW):
-            self.focalbuttons[i] = [None] * self.MAXCOL
-    
-        for i in range(self.MAXROW):
-            
-            for j in range(self.MAXCOL):
-                button = QToolButton()
-                button.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
-                
-                if self.focalidx and i == self.focalidx[0] and j == self.focalidx[1]:
-                    button.setStyleSheet("background-color: #2588d0;")
-                
-                gridLayout.addWidget(button, i, j)
-                
-                button.clicked.connect(partial(self.toggleFocal, i, j))
-                
-                self.focalbuttons[i][j] = button
-                
-        
-        
-        
-        centerLayout = QHBoxLayout()
-        centerLayout.addStretch(1)
-        centerLayout.addLayout(gridLayout);
-        centerLayout.addStretch(1)
         
         # controls
-        self.addbutton = QToolButton()
-        self.addbutton.setText('Add')
+        # Let's replace this with a QDialogButtonBox, then that sorts itself for differences between Desktop Enviroments :)
         
-        self.exitbutton = QToolButton()
-        self.exitbutton.setText('Cancel')
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok|QDialogButtonBox.Cancel)
+        buttons.accepted.connect(self.addfocal)
+        buttons.rejected.connect(self.accept)
         
-        controlsLayout = QHBoxLayout()
-        controlsLayout.addStretch(1)
-        controlsLayout.addWidget(self.exitbutton)
-        controlsLayout.addWidget(self.addbutton)
-        
-        
-        mainLayout = QVBoxLayout()
-        
-        mainLayout.addWidget(self.focallabel)
-        mainLayout.addLayout(centerLayout)
-        mainLayout.addLayout(controlsLayout)
+        mainLayout.addWidget(buttons)
         
         self.setLayout(mainLayout)
-        
-        self.defaultStyleSheet = self.addbutton.styleSheet()
-        
-        # slots
-        self.addbutton.clicked.connect(self.addfocal)
-        self.exitbutton.clicked.connect(self.accept)
-    
-    def indexToCoordinates(self, row, col):
-        """
-        Converts a row & col into a corresponding (x,y) tuple in
-        focal point space. In focal point space, x = -1.0 to 1.0
-        and y = -1.0 to 1.0
-        """
-        
-        
-        # Note - hard coded values. assuming 3x3 grid
-        # using perimiter values except for center
-        if row == 0:
-            if col == 0:
-                return (-1.0, 1.0)
-            elif col == 1:
-                return (0.0, 1.0)
-            elif col == 2:
-                return (1.0, 1.0)
-        elif row == 1:
-            if col == 0:
-                return (-1.0, 0.0)
-            elif col == 1:
-                return (0.0, 0.0)
-            elif col == 2:
-                return (1.0, 0.0)
-        elif row == 2:
-            if col == 0:
-                return (-1.0, -1.0)
-            elif col == 1:
-                return (0.0, -1.0)
-            elif col == 2:
-                return (1.0, -1.0)
-        
-        
-    
-    def toggleFocal(self, row, column):
-        """
-        """
-        #print("CLICKED (" + str(row) + "," + str(column) + ")")
-        
-        # clear all
-        for i in range(self.MAXROW):
-            for j in range(self.MAXCOL):
-                self.focalbuttons[i][j].setStyleSheet(self.defaultStyleSheet)
-        
-        if self.focalidx:
-            # already selected?
-            if row == self.focalidx[0] and column == self.focalidx[1]:
-                self.focalbuttons[row][column].setStyleSheet(self.defaultStyleSheet)
-                self.tempidx = None
-            else:
-                self.focalbuttons[row][column].setStyleSheet("background-color: #2588d0;")
-                self.tempidx = (row, column)
-        else:
-            # first time a selection has been made
-            self.focalbuttons[row][column].setStyleSheet("background-color: #2588d0;")
-            self.tempidx = (row, column)
-    
     
     def addfocal(self):
         """
         """
-        
-        self.focalidx = self.tempidx
-        
-        if self.focalidx:
-            # convert the row/col to actual coordinates
-            self.focalcoords = self.indexToCoordinates(self.focalidx[0], self.focalidx[1])
-        else:
-            self.focalcoords = (0.0, 0.0)
+        focal = self.imageWidget.getFocalPoint()
+        self.focalcoords = (focal[0], focal[1])
         
         self.accept()
 
@@ -282,7 +279,6 @@ class UploadTab(QWidget):
         self.alttext = None
         
         # the selected row and column, if any (otherwise None)
-        self.selfocalidx = None
         self.focalcoords = (0.0, 0.0)
         
         # list of sites where the app is registered and authorized
@@ -492,16 +488,21 @@ class UploadTab(QWidget):
     def addFocalPoint(self):
         """
         """
-        
-        focalui = FocalPointDialog(self, self.selfocalidx);
+        image = QImage()
+        doc = Krita.instance().activeDocument()
+        if doc is not None:
+            image = doc.projection(0, 0, doc.width(), doc.height())
+            if doc.width() > 512 and doc.height() > 512:
+                # This is probably not pixel art.
+                    image = image.scaled(512, 512, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+
+        focalui = FocalPointDialog(self, self.focalcoords, image);
         focalui.exec_()
         
-        self.selfocalidx = focalui.focalidx
-        
-        if self.selfocalidx:
+        self.focalcoords = focalui.focalcoords
+        if self.focalcoords[0] != 0.0 and self.focalcoords[1] != 0.0:
             focalicon = self.icons['focal']
             self.focalpoint.setIcon(focalicon)
-            self.focalcoords = focalui.focalcoords
         else:
             focalicon = self.icons['nofocal']
             self.focalpoint.setIcon(focalicon)
@@ -628,7 +629,6 @@ class UploadTab(QWidget):
                     visibleicon = self.icons['nohide']
                     self.hidden.setIcon(visibleicon)
                     
-                self.selfocalidx = None
                 self.focalcoords = (0.0, 0.0)
                 focalicon = self.icons['nofocal']
                 self.focalpoint.setIcon(focalicon)

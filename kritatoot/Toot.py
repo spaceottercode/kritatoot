@@ -92,12 +92,12 @@ Content-Disposition: form-data; name="description"
         focus = (0.0,0.0)
     
     if focus[0] < -1.0 or focus[0] > 1.0:
-        print('Focal point out of range. Setting to (0,0)')
-        focus = (0.0,0.0)
+        print('Warning: Focal point out of range, bounding.')
+        focus = (min(1.0, max(-1.0, focus[0])), focus[1])
     
     if focus[1] < -1.0 or focus[1] > 1.0:
-        print('Focal point out of range. Setting to (0,0)')
-        focus = (0.0,0.0)
+        print('Warning: Focal point out of range, bounding.')
+        focus = (focus[0], min(1.0, max(-1.0, focus[1])))
     
     # Add a focal point, default is dead-center: (0,0)
     data_focus = '''\r\n--------------------------d74496d66958873e
